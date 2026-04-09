@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { jsPDF } from 'jspdf';
-import { scolaireAnalysis } from '../services/geminiService';
+import { scolaireAnalysisStream } from '../services/geminiService';
 import { UserProfile } from '../types';
 import { supabase } from '../services/supabaseClient';
 import { DEV_NAME } from '../constants';
@@ -37,9 +37,13 @@ export const Scolaire: React.FC<{ profile: UserProfile | null; onAction: () => v
     }
 
     setIsLoading(true);
+    setResponse('');
     try {
-      const result = await scolaireAnalysis(prompt, file || undefined);
-      setResponse(result || "Aucune réponse générée.");
+      let fullResponse = '';
+      await scolaireAnalysisStream(prompt, (chunk) => {
+        fullResponse += chunk;
+        setResponse(fullResponse);
+      }, file || undefined);
       
       if (profile) {
         await supabase.from('profiles').update({ tokens: profile.tokens - 1 }).eq('id', profile.id);

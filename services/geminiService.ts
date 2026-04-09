@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const getAI = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 export const chatStream = async (message: string, history: { role: string; content: string }[], onChunk: (text: string) => void) => {
   const ai = getAI();
@@ -53,7 +53,7 @@ export const scolaireAnalysis = async (prompt: string, fileData?: { data: string
   }
   
   const response = await ai.models.generateContent({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-3.1-pro-preview',
     contents: { parts },
     config: {
       systemInstruction: "Tu es un expert scolaire. Utilise LaTeX pour les mathématiques. Formate tes réponses pour un PDF premium.",
@@ -63,6 +63,28 @@ export const scolaireAnalysis = async (prompt: string, fileData?: { data: string
   return response.text;
 };
 
+export const scolaireAnalysisStream = async (prompt: string, onChunk: (text: string) => void, fileData?: { data: string; mimeType: string }) => {
+  const ai = getAI();
+  const parts: any[] = [{ text: prompt }];
+  if (fileData) {
+    parts.push({
+      inlineData: fileData
+    });
+  }
+  
+  const response = await ai.models.generateContentStream({
+    model: 'gemini-3.1-pro-preview',
+    contents: { parts },
+    config: {
+      systemInstruction: "Tu es un expert scolaire. Utilise LaTeX pour les mathématiques. Formate tes réponses pour un PDF premium.",
+    }
+  });
+  
+  for await (const chunk of response) {
+    onChunk(chunk.text || '');
+  }
+};
+
 export const translateText = async (text: string, targetLang: string) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
@@ -70,6 +92,17 @@ export const translateText = async (text: string, targetLang: string) => {
     contents: `Translate the following text to ${targetLang}: "${text}"`,
   });
   return response.text;
+};
+
+export const translateTextStream = async (text: string, targetLang: string, onChunk: (text: string) => void) => {
+  const ai = getAI();
+  const response = await ai.models.generateContentStream({
+    model: 'gemini-3-flash-preview',
+    contents: `Translate the following text to ${targetLang}: "${text}"`,
+  });
+  for await (const chunk of response) {
+    onChunk(chunk.text || '');
+  }
 };
 
 export const generateAffiche = async (prompt: string) => {

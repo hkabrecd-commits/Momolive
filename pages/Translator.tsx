@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Languages, Volume2, Mic, Copy, ArrowRightLeft } from 'lucide-react';
-import { translateText } from '../services/geminiService';
+import { translateTextStream } from '../services/geminiService';
 import { UserProfile } from '../types';
 import { supabase } from '../services/supabaseClient';
 
@@ -33,9 +33,13 @@ export const Translator: React.FC<{ profile: UserProfile | null; onAction: () =>
     }
 
     setIsLoading(true);
+    setTranslatedText('');
     try {
-      const res = await translateText(inputText, targetLang);
-      setTranslatedText(res || '');
+      let fullTranslation = '';
+      await translateTextStream(inputText, targetLang, (chunk) => {
+        fullTranslation += chunk;
+        setTranslatedText(fullTranslation);
+      });
       
       if (profile) {
         await supabase.from('profiles').update({ tokens: profile.tokens - 1 }).eq('id', profile.id);
@@ -100,7 +104,7 @@ export const Translator: React.FC<{ profile: UserProfile | null; onAction: () =>
             </div>
           </div>
           <div className="min-h-[128px] text-xl text-white">
-            {isLoading ? <div className="animate-pulse text-gray-500">Traduction...</div> : translatedText}
+            {isLoading && !translatedText ? <div className="animate-pulse text-gray-500">Traduction...</div> : translatedText}
           </div>
         </div>
 
