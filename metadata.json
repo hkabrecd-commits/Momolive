@@ -1,0 +1,8 @@
+{
+  "name": "SOFIA AI - SaaS Premium",
+  "description": "Une plateforme minimaliste et ultra-performante regroupant des outils d'IA avancés : Chat, Image, Scolaire, et Traduction.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
